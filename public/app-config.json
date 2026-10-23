@@ -1,0 +1,14 @@
+{
+    "apiUrl": "/api/v1",
+    "passwordGenerator": {
+        "defaultLength": 20,
+        "minLength": 15,
+        "maxLength": 64,
+        "includeLowercase": true,
+        "includeUppercase": true,
+        "includeNumbers": true,
+        "includeSymbols": true,
+        "excludeAmbiguous": true,
+        "symbolCharacters": "!@#$%^&*()-_=+[]{};:,.?"
+    }
+}

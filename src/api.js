@@ -1,15 +1,14 @@
 import { encryptPassword, serializeBlob } from './crypto'
 import { ENCRYPT_ON_DEVICE } from './config'
-
-const BASE_URL = '/api/v1'
+import { getApiUrl } from './runtimeConfig'
 
 // Allows API calls over HTTPS, while permitting plain HTTP for local development.
-function isSecureRequestAllowed() {
+function isSecureRequestAllowed(endpoint) {
   if (typeof window === 'undefined') return true
 
-  const { protocol, hostname } = window.location
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]'
-  return protocol === 'https:' || isLocalhost
+  const requestUrl = new URL(getApiUrl(endpoint), window.location.href)
+  const isLocalhost = ['localhost', '127.0.0.1', '[::1]'].includes(requestUrl.hostname)
+  return requestUrl.protocol === 'https:' || (requestUrl.protocol === 'http:' && isLocalhost)
 }
 
 // Prevents authentication and vault endpoints from being called over insecure HTTP.
@@ -17,7 +16,7 @@ function ensureSecureAuthRequest(endpoint) {
   const authEndpoints = ['/User/', '/Data/', '/Note/']
   const isAuthRequest = authEndpoints.some((prefix) => endpoint.startsWith(prefix))
 
-  if (isAuthRequest && !isSecureRequestAllowed()) {
+  if (isAuthRequest && !isSecureRequestAllowed(endpoint)) {
     throw new Error('HTTPS is required for authenticated requests.')
   }
 }
@@ -59,7 +58,7 @@ function redactSensitiveData(value, seen = new WeakSet()) {
 async function apiRequest(endpoint, options = {}) {
   ensureSecureAuthRequest(endpoint)
 
-  const url = `${BASE_URL}${endpoint}`
+  const url = getApiUrl(endpoint)
   const config = {
     ...options,
     headers: {

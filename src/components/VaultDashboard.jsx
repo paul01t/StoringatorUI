@@ -3,10 +3,12 @@ import { useForm } from 'react-hook-form'
 import { getLoginData, createLoginData, deleteLoginData, getClearPassword, logout, isAuthenticationError } from '../api'
 import { getToken, clearSession } from '../auth'
 import PasswordModal from './PasswordModal.jsx'
+import PasswordGenerator from './PasswordGenerator.jsx'
 import BackupRestore from './BackupRestore.jsx'
 import { decryptPasswordLocally, deserializeBlob } from '../crypto.js'
 import { ENCRYPT_ON_DEVICE } from '../config.js'
 import { validatePassphrase } from '../passphrase.js'
+import { getPasswordGeneratorConfig } from '../runtimeConfig.js'
 
 // Renders the authenticated vault and manages record and password workflows.
 export default function VaultDashboard({ loggedInUser, setLoggedInUser, error, setError }) {
@@ -18,7 +20,7 @@ export default function VaultDashboard({ loggedInUser, setLoggedInUser, error, s
   const [decryptedPassword, setDecryptedPassword] = useState('')
   const [copied, setCopied] = useState(false)
 
-  const { register, handleSubmit: handleNewSubmit, reset: resetNewForm, formState: { errors: formErrors, isSubmitting } } = useForm()
+  const { register, handleSubmit: handleNewSubmit, reset: resetNewForm, setValue, formState: { errors: formErrors, isSubmitting } } = useForm()
   const normalizedSearch = searchQuery.trim().toLocaleLowerCase()
   const filteredVaultData = normalizedSearch
     ? vaultData.filter(item => [item.platform, item.username, item.email, item.extrainfo]
@@ -161,6 +163,11 @@ export default function VaultDashboard({ loggedInUser, setLoggedInUser, error, s
     setError('')
   }
 
+  function useGeneratedPassword(password) {
+    setShowNewForm(true)
+    setValue('password', password, { shouldDirty: true, shouldValidate: true })
+  }
+
   // Ends the server and local sessions, even if the request fails.
   async function handleLogout() {
     const token = getToken()
@@ -188,6 +195,7 @@ export default function VaultDashboard({ loggedInUser, setLoggedInUser, error, s
               <h2>Your Vault</h2>
               <div className="dashboard-actions">
                 <BackupRestore onRestored={loadVaultData} setLoggedInUser={setLoggedInUser} />
+                <PasswordGenerator settings={getPasswordGeneratorConfig()} onUse={useGeneratedPassword} />
                 <button className="add-btn" onClick={toggleNewForm}>
                   {showNewForm ? <><i className="ph ph-x"></i> Cancel</> : <><i className="ph ph-plus"></i> Add Record</>}
                 </button>
